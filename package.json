@@ -1,0 +1,13 @@
+{
+  "name": "card_play",
+  "type": "module",
+  "version": "1.0.0",
+  "main": "GameView.js",
+  "author": "JamesZou",
+  "license": "MIT",
+  "private": false,
+  "dependencies": {
+    "inquirer": "^8.2.0",
+    "readline-sync": "^1.4.10"
+  }
+}
