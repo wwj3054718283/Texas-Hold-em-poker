@@ -12,21 +12,27 @@
 // import prompt from 'prompt-sync'
 // console.readLine = prompt();
 
-
-import readline from 'readline'
-// 生成要读取文件的 interface
+// 导入 逐行读取 
+import readline from 'readline';
+// 1.生成要读取文件的 interface
 const rl = readline.createInterface({
+    // 监听的 可读流
     input: process.stdin,
+    // 将 逐行读取 的数据 写入 可写流
     output: process.stdout
 });
 
-// 2.追加 readLine 方法
+// 2.追加 readLine 方法 
+// msg:提示语 answer:键入数据信息
 console.readLine = function (msg) {
+    // 返回一个 Promise对象 
     return new Promise((suc, fal) => {
         rl.question(msg, (answer) => {
             suc(answer)
         });
-    }).finally(() => {
+    })
+    // 不管Promise的结果如何 都会执行finally()
+    .finally(() => {
         // rl.close();
     })
 }
@@ -58,7 +64,7 @@ console.readNum2 = async function (msg) {
     })
 }
 
-
+console.log(console);
 
 
 // -------------------------JamesZou---------------------

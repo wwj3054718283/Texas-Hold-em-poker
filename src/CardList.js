@@ -1,11 +1,14 @@
-import Card from './Card.js'
+import Card from './Card.js';
 
 // 一副牌 类
+//  feat:继承 数组 所有 属性
 export default class CardList extends Array {
     // -------------一.工具函数-------------
+    // fix 放入 tool.js文件
     // 1.生成指定随机整数
+    //  feat:lower：最小数 upper：最大数 forbidNum：禁止数
     randomInt(lower, upper, forbidNum = false) {
-        // a.随机生成数字
+        // a.随机生成数字 其区间在[lower, upper]
         let ranNum = lower + Math.floor(Math.random() * (upper - lower + 1));
         // b.如果 不存在 禁用数字，则直接返回
         if (!forbidNum) return ranNum
@@ -21,6 +24,7 @@ export default class CardList extends Array {
     // -------------二.业务函数-------------
     // 1.构造函数：初始化一副牌
     constructor(withKing = true) {
+        // feat:ES6 要求，子类的构造函数必须执行一次super函数
         super()
         // 1.1 牌数组
         // this.cardList = []
@@ -71,3 +75,5 @@ export default class CardList extends Array {
         return this.pop()
     }
 }
+// feat:测试
+console.log(CardList.randomInt);
