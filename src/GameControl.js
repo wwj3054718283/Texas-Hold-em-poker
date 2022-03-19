@@ -1,15 +1,15 @@
 import CardList from './CardList.js'
-import Player from './Player.js'
-import Rule from './Rule.js'
 // 0.2 导入游戏界面类
 import GameView from "./GameView.js"
+import Player from './Player.js'
+import Rule from './Rule.js'
 
 
 export default class GameControl {
     constructor() {
         // a.创建游戏界面实例------------------
         this.gameView = new GameView(this)
-        this.cardList = new CardList(false) // 牌
+        this.cardList = new CardList(false) // 组牌 不要大王小王
         this.players = [] // 玩家数组
         this.rule = new Rule() // 游戏规则
         this.pubCards = null // 公共牌
@@ -96,7 +96,7 @@ export default class GameControl {
             // b1.玩家手牌 根据牌力做排序(大->小)
             // p.cards.sort((pre, next) => next.cardPower - pre.cardPower)
             // b2.玩家混合手牌 根据牌力做排序(大->小)
-            p.mixCards.sort((pre, next) => next.cardPower - pre.cardPower)
+            p.mixCards.sort((pre, next) => next.cardPower - pre.cardPower)//feat:降序排列
             // p.mixCards.forEach(c => {
             //     console.log(p.name, c)
             // })
@@ -133,14 +133,14 @@ export default class GameControl {
         this.players.sort((p1, p2) => p2.power - p1.power)
 
         this.players.forEach(p => {
-            console.log('-------' + p.name + '-------')
+            console.log('-------玩家:' + p.name + '-------')
             let cardsStr = p.showTheCards(p.grand.cards)
-            cardsStr += '\n' + p.showTheCards(p.grand.grandCards)
+            cardsStr += '\n\t\t牌型：' + p.showTheCards(p.grand.grandCards)
             let str = `牌力:${p.power} 牌型:${p.grand.typeName} \t ${cardsStr} \n`
             console.log(str)
         })
 
-        console.log('【获胜者】：', this.players[0].name)
+        console.log(`【获胜者】:\t\t\t玩家${this.players[0].name}`)
     }
 
 }

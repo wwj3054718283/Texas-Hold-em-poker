@@ -74,7 +74,20 @@ node ./src/index.js
 
 node v16.14.2
 
-# 三、依赖包解析
+# 三、项目结构
+
+src                
+├─ utils           工具包
+│  └─ tools.js     工具类
+├─ Card.js         一张牌类
+├─ CardList.js     一副牌类
+├─ GameControl.js  游戏控制器
+├─ GameView.js     游戏界面
+├─ index.js        入口
+├─ Player.js       玩家类
+└─ Rule.js         规则
+
+# 四、依赖包解析
 
 ## readline
 

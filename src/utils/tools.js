@@ -63,8 +63,8 @@ console.readNum2 = async function (msg) {
         rl.close();
     })
 }
-
-console.log(console);
+// 测试
+// console.log(console);
 
 
 // -------------------------JamesZou---------------------

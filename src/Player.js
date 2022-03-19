@@ -11,9 +11,8 @@ export default class Player {
     // 0.展示指定牌组 字符串
     showTheCards(cardList) {
         if (cardList.length == 0) return '未发牌'
-
-        let str = '\t'
-
+        let str = ''
+        // feat:便利玩家手牌
         cardList.forEach((c) => {
             str += c.name + '\t'
         })

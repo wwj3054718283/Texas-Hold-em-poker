@@ -34,7 +34,7 @@ export default class Card {
         // '3':'方块',
     }
     // 3.牌花图标： http://cn.piliapp.com/symbol/
-    static TypeImg = ["♥", "♠", "♦", "♣"];
+    static TypeImg = ["♥", "♠", "♣", "♦"];
 
     // ------------构造函数-------------------
     constructor(type, num, name) {

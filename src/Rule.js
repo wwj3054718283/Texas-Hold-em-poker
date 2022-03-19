@@ -1,5 +1,4 @@
 import Card from './Card.js'
-import Player from './Player.js'
 
 // 牌型筛选类
 class Grand {
@@ -40,6 +39,7 @@ class Grand {
             case 3: return '两对'
             case 2: return '一对'
             case 0: return '高牌'
+            // 错误判断
             default: return '非法类型'
         }
     }
@@ -80,6 +80,7 @@ export default class Rule {
 
     // 2.计算牌型(grand)，返回 牌型对象(type,cards)------------------------
     calGrandType(mixCards) {
+        // feat:console.log("Rules----------mixCards:", mixCards);
         // 符合条件的牌：
         let selectedCards = []
 
@@ -105,6 +106,7 @@ export default class Rule {
             let card_type = Card.Type[card_type_key]
             // 查询 同花色的牌
             selectedCards = mixCards.filter(c => c.type === card_type)
+            // feat:console.log('Rule-109-----selectedCards',selectedCards);
             // 如果有5张同花色的牌，则为 同花
             if (selectedCards.length === 5) {
                 grandType.flush[0] = true // 同花
@@ -114,6 +116,7 @@ export default class Rule {
                 // 【3_同花顺】如果同花牌 是顺子 ---------------------
                 let samePowerCount = 0
                 for (let i = 0; i < selectedCards.length - 1; i++) {
+                    // feat:首先要进行牌力的排序 再进行牌力判断
                     // 顺子：有5张牌 后面的 和 前面的牌力 相等，如：KQJ109,但不含4321A
                     if (selectedCards[i].cardPower - selectedCards[i + 1].cardPower === 1) {
                         // 累加 前后牌 符合条件的次数
@@ -121,9 +124,11 @@ export default class Rule {
                     }
                 }
                 // 如果 第一张 和 最后一张牌 是 A 和 2，也+1：针对 4321A
+                // feat：在德州的规则中，只有A可以替换任意牌当作顺子，所以可以判断 四张牌连续 让后再判断是否存在 A 再对samePowerCount进行操作
                 if (selectedCards[0].cardPower === 13 && selectedCards[4].cardPower === 1) {
                     samePowerCount++
                 }
+                // feat:console.log("Rule-130----samePowerCount:", samePowerCount);
                 if (samePowerCount >= 4) {
                     grandType.straightFlush[0] = true // 同花顺 KQJ 10 9
                     grandType.straightFlush[1].grandCards = [...selectedCards] // 保存 配型牌组
@@ -152,6 +157,12 @@ export default class Rule {
             // 设置 牌型名称
             grandType.straightFlush[1].typeName = Grand.getGrandName(grandType.straightFlush[1].type)
             return grandType.straightFlush[1]
+        }
+        // feat:设置同花
+        else if (grandType.flush[0]) {
+            // 设置 牌型名称
+            grandType.flush[1].typeName = Grand.getGrandName(grandType.flush[1].type)
+            return grandType.flush[1]
         }
 
         // c.顺子(普通顺子) -------------------------------------------
@@ -247,7 +258,7 @@ export default class Rule {
                     selectedCards.push(...lastOne) // 将找出另一对加入到 选中牌组
                     grandType.twoPair[1].cards = selectedCards // 保存 选中牌
                 }
-                else {
+                else if (selectedCards.length === 1) {
                     // 【单对】在剩余牌中找出3张最大牌
                     let last3Card = this.findMax(mixCards, 3, selectedCards)
                     grandType.onePair[0] = true // 10一对
@@ -256,6 +267,8 @@ export default class Rule {
 
                     selectedCards.push(...last3Card) // 将找出的剩下3张 加入 选中数组
                     grandType.onePair[1].cards = selectedCards // 保存 选中牌
+                } else {
+
                 }
             }
         }
@@ -266,7 +279,9 @@ export default class Rule {
 
         // f.根据 牌型牌力大小，返回 符合的 最大牌型-----------------
         // 由于 遍历时，按照对象 中 属性的 先后顺序，由大牌
+        // feat:console.log('Rule----------------grandType:', grandType);
         for (let key in grandType) {
+            // grandType:{royalFlush:[false,Grand],...}
             //取出牌型数组 -> [true,new Grand(type,typeName,cards)]
             let typeArr = grandType[key]
             if (typeArr[0]) {
@@ -344,400 +359,402 @@ export default class Rule {
         return player.grand.getPower() + power
     }
 
-    // 测试 牌组
-    static TestCards = {
-        royalFlush: { // 10皇家同花顺:由5张 花色相同A K Q J 10 组成
-            cards: [
-                { type: 0, num: 'A', name: '♥A', cardPower: 13 },
-                { type: 0, num: 'K', name: '♥K', cardPower: 12 },
-                { type: 0, num: 'Q', name: '♥Q', cardPower: 11 },
-                { type: 0, num: 'J', name: '♥J', cardPower: 10 },
-                { type: 0, num: '10', name: '♥10', cardPower: 9 },
-                { type: 1, num: '2', name: '♠2', cardPower: 1 },
-                { type: 3, num: '2', name: '♠2', cardPower: 1 }
-            ],
-            playerCards: [
-                { type: 0, num: 'Q', name: '♥Q', cardPower: 11 },
-                { type: 0, num: 'J', name: '♥J', cardPower: 10 }
-            ]
-        },
-        straightFlush: { // 9同花顺:由5张 连张同花色的牌组成
-            cards: [
-                { type: 2, num: '12', name: '♦K', cardPower: 12 },
-                { type: 0, num: '12', name: '♥K', cardPower: 12 },
-                { type: 0, num: '11', name: '♥Q', cardPower: 11 },
-                { type: 0, num: '10', name: '♥J', cardPower: 10 },
-                { type: 0, num: '9', name: '♥10', cardPower: 9 },
-                { type: 0, num: '8', name: '♥9', cardPower: 8 },
-                { type: 1, num: '1', name: '♠2', cardPower: 1 },
-            ],
-            playerCards: [
-                { type: 0, num: '10', name: '♥J', cardPower: 10 },
-                { type: 0, num: '9', name: '♥10', cardPower: 9 },
-            ]
-        },
-        straightFlush2: { // 9同花顺:由5张 连张同花色的牌组成
-            cards: [
-                { type: 0, num: '13', name: '♥A', cardPower: 13 },
-                { type: 1, num: '6', name: '♠6', cardPower: 5 },
-                { type: 0, num: '5', name: '♥5', cardPower: 4 },
-                { type: 0, num: '4', name: '♥4', cardPower: 3 },
-                { type: 0, num: '3', name: '♥3', cardPower: 2 },
-                { type: 0, num: '2', name: '♥2', cardPower: 1 },
-                { type: 1, num: '2', name: '♠2', cardPower: 1 },
-            ],
-            playerCards: [
-                { type: 0, num: '13', name: '♥A', cardPower: 13 },
-                { type: 0, num: '5', name: '♥5', cardPower: 4 },
-            ]
-        },
-        fourOfAKind: { // 8四条(4带1)
-            cards: [
-                { type: 0, num: 'A', name: '♥A', cardPower: 13 },
-                { type: 2, num: 'A', name: '♦A', cardPower: 13 },
-                { type: 1, num: 'A', name: '♠A', cardPower: 13 },
-                { type: 3, num: 'A', name: '♣A', cardPower: 13 },
-                { type: 3, num: 'K', name: '♣K', cardPower: 12 },
-                { type: 0, num: 'J', name: '♥J', cardPower: 10 },
-                { type: 1, num: '2', name: '♠2', cardPower: 1 }
-            ],
-            playerCards: [
-                { type: 3, num: 'A', name: '♣A', cardPower: 13 },
-                { type: 3, num: 'K', name: '♣K', cardPower: 12 },
-            ]
-        },
-        fourOfAKind2: { // 8四条(4带1)
-            cards: [
-                { type: 3, num: 'K', name: '♣K', cardPower: 12 },
-                { type: 0, num: 'J', name: '♥J', cardPower: 10 },
-                { type: 1, num: '5', name: '♠5', cardPower: 4 },
-                { type: 0, num: '2', name: '♥2', cardPower: 1 },
-                { type: 2, num: '2', name: '♦2', cardPower: 1 },
-                { type: 1, num: '2', name: '♠2', cardPower: 1 },
-                { type: 3, num: '2', name: '♣2', cardPower: 1 }
-            ],
-            playerCards: [
-                { type: 1, num: '5', name: '♠5', cardPower: 4 },
-                { type: 0, num: '2', name: '♥2', cardPower: 1 },
-            ]
-        },
-        fullHouse: { // 7葫芦(3带2)
-            cards: [
-                { type: 0, num: 'A', name: '♥A', cardPower: 13 },
-                { type: 1, num: 'J', name: '♠J', cardPower: 10 },
-                { type: 2, num: 'J', name: '♦J', cardPower: 10 },
-                { type: 3, num: 'J', name: '♣J', cardPower: 10 },
-                { type: 0, num: '8', name: '♥8', cardPower: 7 },
-                { type: 2, num: '8', name: '♦8', cardPower: 7 },
-                { type: 1, num: '2', name: '♠2', cardPower: 1 }
-            ],
-            playerCards: [
-                { type: 3, num: 'J', name: '♣J', cardPower: 10 },
-                { type: 0, num: '8', name: '♥8', cardPower: 7 },
-            ]
-        },
-        fullHouse1: { // 7葫芦(3带2)
-            cards: [
-                { type: 0, num: 'A', name: '♥A', cardPower: 13 },
-                { type: 1, num: 'A', name: '♠A', cardPower: 13 },
-                { type: 2, num: 'A', name: '♦A', cardPower: 13 },
-                { type: 3, num: 'K', name: '♣K', cardPower: 12 },
-                { type: 0, num: 'K', name: '♥K', cardPower: 12 },
-                { type: 2, num: '8', name: '♦8', cardPower: 7 },
-                { type: 1, num: '2', name: '♠2', cardPower: 1 }
-            ],
-            playerCards: [
-                { type: 0, num: 'K', name: '♥K', cardPower: 12 },
-                { type: 2, num: '8', name: '♦8', cardPower: 7 },
-            ]
-        },
-        fullHouse2: { // 7葫芦(3带2)
-            cards: [
-                { type: 2, num: '8', name: '♦8', cardPower: 7 },
-                { type: 1, num: '5', name: '♠5', cardPower: 4 },
-                { type: 3, num: 'K', name: '♣3', cardPower: 2 },
-                { type: 0, num: 'K', name: '♥3', cardPower: 2 },
-                { type: 0, num: '2', name: '♥2', cardPower: 1 },
-                { type: 1, num: '2', name: '♠2', cardPower: 1 },
-                { type: 2, num: '2', name: '♦2', cardPower: 1 }
-            ],
-            playerCards: [
-                { type: 3, num: 'K', name: '♣3', cardPower: 2 },
-                { type: 2, num: '8', name: '♦8', cardPower: 7 },
-            ]
-        },
-        flush: { // 6同花: 5张牌花色相同，但不构成顺子
-            cards: [
-                { type: 2, num: '10', name: '♦10', cardPower: 9 },
-                { type: 0, num: '10', name: '♥10', cardPower: 9 },
-                { type: 0, num: '6', name: '♥6', cardPower: 5 },
-                { type: 0, num: '5', name: '♥5', cardPower: 4 },
-                { type: 0, num: '4', name: '♥4', cardPower: 3 },
-                { type: 0, num: '3', name: '♥3', cardPower: 2 },
-                { type: 1, num: '2', name: '♠2', cardPower: 1 }
-            ],
-            playerCards: [
-                { type: 0, num: '4', name: '♥4', cardPower: 3 },
-                { type: 1, num: '2', name: '♠2', cardPower: 1 }
-            ]
-        },
-        flush1: { // 6同花 最大: 5张牌花色相同，但不构成顺子
-            cards: [
-                { type: 0, num: 'A', name: '♥A', cardPower: 13 },
-                { type: 0, num: 'K', name: '♥K', cardPower: 12 },
-                { type: 0, num: 'Q', name: '♥Q', cardPower: 11 },
-                { type: 0, num: 'J', name: '♥J', cardPower: 10 },
-                { type: 0, num: '9', name: '♥9', cardPower: 8 },
-                { type: 1, num: '2', name: '♠2', cardPower: 1 },
-                { type: 3, num: '2', name: '♠2', cardPower: 1 }
-            ],
-            playerCards: [
-                { type: 0, num: 'J', name: '♥J', cardPower: 10 },
-                { type: 0, num: '9', name: '♥9', cardPower: 8 },
-            ]
-        },
-        flush2: { // 6同花 最小: 5张牌花色相同，但不构成顺子
-            cards: [
-                { type: 0, num: '7', name: '♥7', cardPower: 6 },
-                { type: 0, num: '6', name: '♥6', cardPower: 5 },
-                { type: 0, num: '5', name: '♥5', cardPower: 4 },
-                { type: 1, num: '5', name: '♠5', cardPower: 4 },
-                { type: 0, num: '4', name: '♥4', cardPower: 3 },
-                { type: 0, num: '2', name: '♥2', cardPower: 1 },
-                { type: 1, num: '2', name: '♠2', cardPower: 1 }
-            ],
-            playerCards: [
-                { type: 0, num: '4', name: '♥4', cardPower: 3 },
-                { type: 0, num: '2', name: '♥2', cardPower: 1 },
-            ]
-        },
-        straight: {// 5顺子: 5张牌连张，至少1张花色不同
-            cards: [
-                { type: 2, num: '10', name: '♦10', cardPower: 9 },
-                { type: 2, num: '7', name: '♦7', cardPower: 6 },
-                { type: 0, num: '6', name: '♥6', cardPower: 5 },
-                { type: 1, num: '5', name: '♠5', cardPower: 4 },
-                { type: 3, num: '4', name: '♣4', cardPower: 3 },
-                { type: 0, num: '3', name: '♥3', cardPower: 2 },
-                { type: 1, num: '3', name: '♠3', cardPower: 2 },
-            ],
-            playerCards: [
-                { type: 2, num: '10', name: '♦10', cardPower: 9 },
-                { type: 3, num: '4', name: '♣4', cardPower: 3 },
-            ]
-        },
-        straight1: {// 5顺子 最大：5张牌连张，至少1张花色不同
-            cards: [
-                { type: 1, num: 'A', name: '♠A', cardPower: 13 },
-                { type: 0, num: 'K', name: '♥K', cardPower: 12 },
-                { type: 0, num: 'Q', name: '♥Q', cardPower: 11 },
-                { type: 0, num: 'J', name: '♥J', cardPower: 10 },
-                { type: 0, num: '10', name: '♥10', cardPower: 9 },
-                { type: 1, num: '2', name: '♠2', cardPower: 1 },
-                { type: 1, num: '2', name: '♠2', cardPower: 1 }
-            ],
-            playerCards: [
-                { type: 0, num: 'J', name: '♥J', cardPower: 10 },
-                { type: 0, num: '10', name: '♥10', cardPower: 9 },
-            ]
-        },
-        straight2: {// 5顺子 测试乱牌
-            cards: [
-                { type: 0, num: '13', name: '♥A', cardPower: 13 },
-                { type: 1, num: '7', name: '♠7', cardPower: 6 },
-                { type: 0, num: '5', name: '♥5', cardPower: 4 },
-                { type: 2, num: '4', name: '♦4', cardPower: 3 },
-                { type: 3, num: '3', name: '♣3', cardPower: 2 },
-                { type: 0, num: '2', name: '♥2', cardPower: 1 },
-                { type: 1, num: '2', name: '♠2', cardPower: 1 },
-            ],
-            playerCards: [
-                { type: 2, num: '4', name: '♦4', cardPower: 3 },
-                { type: 3, num: '3', name: '♣3', cardPower: 2 },
-            ]
-        },
-        straight3: {// 5顺子: 5张牌连张，至少1张花色不同
-            cards: [
-                { type: 2, num: 'Q', name: '♦Q', cardPower: 11 },
-                { type: 2, num: 'J', name: '♦J', cardPower: 10 },
-                { type: 0, num: '10', name: '♥10', cardPower: 9 },
-                { type: 1, num: '9', name: '♠9', cardPower: 8 },
-                { type: 3, num: '8', name: '♣8', cardPower: 7 },
-                { type: 0, num: '3', name: '♥3', cardPower: 2 },
-                { type: 1, num: '2', name: '♠2', cardPower: 1 },
-            ],
-            playerCards: [
-                { type: 1, num: '9', name: '♠9', cardPower: 8 },
-                { type: 3, num: '8', name: '♣8', cardPower: 7 },
-            ]
-        },
-        straight4: {// 5顺子: 5张牌连张，至少1张花色不同
-            cards: [
-                { type: 2, num: 'K', name: '♦K', cardPower: 12 },
-                { type: 2, num: 'Q', name: '♦Q', cardPower: 11 },
-                { type: 0, num: 'J', name: '♥J', cardPower: 10 },
-                { type: 1, num: '3', name: '♠3', cardPower: 2 },
-                { type: 0, num: '3', name: '♥3', cardPower: 2 },
-                { type: 3, num: '2', name: '♣2', cardPower: 1 },
-                { type: 1, num: '2', name: '♠2', cardPower: 1 },
-            ],
-            playerCards: [
-                { type: 0, num: 'J', name: '♥J', cardPower: 10 },
-                { type: 1, num: '3', name: '♠3', cardPower: 2 },
-            ]
-        },
-        threeOfAKind: { //4三条: 3张牌点值相同，其他2张各异
-            cards: [
-                { type: 0, num: 'J', name: '♥J', cardPower: 10 },
-                { type: 1, num: 'J', name: '♠J', cardPower: 10 },
-                { type: 2, num: 'J', name: '♦J', cardPower: 10 },
-                { type: 3, num: '10', name: '♣10', cardPower: 9 },
-                { type: 0, num: '5', name: '♥5', cardPower: 4 },
-                { type: 2, num: '8', name: '♦8', cardPower: 7 },
-                { type: 1, num: '2', name: '♠2', cardPower: 1 }
-            ],
-            playerCards: [
-                { type: 2, num: 'J', name: '♦J', cardPower: 10 },
-                { type: 3, num: '10', name: '♣10', cardPower: 9 },
-            ]
-        },
-        threeOfAKind1: { //4三条 最大: 3张牌点值相同，其他2张各异
-            cards: [
-                { type: 0, num: 'J', name: '♥A', cardPower: 13 },
-                { type: 1, num: 'J', name: '♠A', cardPower: 13 },
-                { type: 2, num: 'J', name: '♦A', cardPower: 13 },
-                { type: 3, num: 'K', name: '♣K', cardPower: 12 },
-                { type: 0, num: 'Q', name: '♥Q', cardPower: 11 },
-                { type: 2, num: '8', name: '♦8', cardPower: 7 },
-                { type: 1, num: '2', name: '♠2', cardPower: 1 }
-            ],
-            playerCards: [
-                { type: 2, num: 'J', name: '♦A', cardPower: 13 },
-                { type: 3, num: 'K', name: '♣K', cardPower: 12 },
-            ]
-        },
-        threeOfAKind2: { //4三条 最小: 3张牌点值相同，其他2张各异
-            cards: [
-                { type: 2, num: '7', name: '♦7', cardPower: 6 },
-                { type: 0, num: '6', name: '♥6', cardPower: 5 },
-                { type: 1, num: '5', name: '♠5', cardPower: 4 },
-                { type: 3, num: '4', name: '♣4', cardPower: 3 },
-                { type: 0, num: '2', name: '♥2', cardPower: 1 },
-                { type: 1, num: '2', name: '♠2', cardPower: 1 },
-                { type: 2, num: '2', name: '♦2', cardPower: 1 }
-            ],
-            playerCards: [
-                { type: 2, num: '2', name: '♦2', cardPower: 1 },
-                { type: 3, num: '3', name: '♣3', cardPower: 2 },
-            ]
-        },
-        twoPair: { // 3两对: 2对加上一个杂牌
-            cards: [
-                { type: 0, num: 'A', name: '♥A', cardPower: 13 },
-                { type: 1, num: 'J', name: '♠J', cardPower: 10 },
-                { type: 2, num: 'J', name: '♦J', cardPower: 10 },
-                { type: 3, num: '10', name: '♣10', cardPower: 9 },
-                { type: 0, num: '5', name: '♥5', cardPower: 4 },
-                { type: 2, num: '5', name: '♦5', cardPower: 4 },
-                { type: 1, num: '2', name: '♠2', cardPower: 1 }
-            ],
-            playerCards: [
-                { type: 0, num: 'A', name: '♥A', cardPower: 13 },
-                { type: 0, num: '5', name: '♥5', cardPower: 4 },
-            ]
-        },
-        twoPair1: { // 3两对 最大: 2对加上一个杂牌
-            cards: [
-                { type: 0, num: 'A', name: '♥A', cardPower: 13 },
-                { type: 1, num: 'A', name: '♠A', cardPower: 13 },
-                { type: 2, num: 'K', name: '♦K', cardPower: 12 },
-                { type: 3, num: 'K', name: '♣K', cardPower: 12 },
-                { type: 0, num: 'Q', name: '♥Q', cardPower: 11 },
-                { type: 2, num: '5', name: '♦5', cardPower: 4 },
-                { type: 1, num: '2', name: '♠2', cardPower: 1 }
-            ],
-            playerCards: [
-                { type: 3, num: 'K', name: '♣K', cardPower: 12 },
-                { type: 0, num: 'Q', name: '♥Q', cardPower: 11 },
-            ]
-        },
-        twoPair2: { // 3两对 最大: 2对加上一个杂牌
-            cards: [
-                { type: 2, num: '6', name: '♦6', cardPower: 5 },
-                { type: 1, num: '5', name: '♠5', cardPower: 4 },
-                { type: 0, num: '4', name: '♥4', cardPower: 3 },
-                { type: 2, num: '3', name: '♦3', cardPower: 12 },
-                { type: 3, num: '3', name: '♣3', cardPower: 12 },
-                { type: 0, num: '2', name: '♥2', cardPower: 13 },
-                { type: 1, num: '2', name: '♠2', cardPower: 13 },
-            ],
-            playerCards: [
-                { type: 3, num: '3', name: '♣3', cardPower: 12 },
-                { type: 0, num: '4', name: '♥4', cardPower: 11 },
-            ]
-        },
-        onePair: { // 2一对: 1对加上3张杂牌
-            cards: [
-                { type: 0, num: 'A', name: '♥A', cardPower: 13 },
-                { type: 1, num: 'J', name: '♠J', cardPower: 10 },
-                { type: 2, num: 'J', name: '♦J', cardPower: 10 },
-                { type: 3, num: '10', name: '♣10', cardPower: 9 },
-                { type: 0, num: '5', name: '♥5', cardPower: 4 },
-                { type: 2, num: '4', name: '♦4', cardPower: 3 },
-                { type: 1, num: '2', name: '♠2', cardPower: 1 }
-            ],
-            playerCards: [
-                { type: 2, num: 'J', name: '♦J', cardPower: 10 },
-                { type: 2, num: '4', name: '♦4', cardPower: 3 },
-            ]
-        },
-        onePair1: { // 2一对 最大: 1对加上3张杂牌
-            cards: [
-                { type: 0, num: 'A', name: '♥A', cardPower: 13 },
-                { type: 1, num: 'A', name: '♠A', cardPower: 13 },
-                { type: 2, num: 'K', name: '♦K', cardPower: 12 },
-                { type: 3, num: 'Q', name: '♣Q', cardPower: 11 },
-                { type: 0, num: 'J', name: '♥J', cardPower: 10 },
-                { type: 2, num: '4', name: '♦4', cardPower: 3 },
-                { type: 1, num: '2', name: '♠2', cardPower: 1 }
-            ],
-            playerCards: [
-                { type: 3, num: 'Q', name: '♣Q', cardPower: 11 },
-                { type: 0, num: 'J', name: '♥J', cardPower: 10 },
-            ]
-        },
-        onePair2: { // 2一对 最小: 1对加上3张杂牌
-            cards: [
-                { type: 0, num: '8', name: '♥8', cardPower: 7 },
-                { type: 1, num: '7', name: '♠7', cardPower: 6 },
-                { type: 2, num: '6', name: '♦6', cardPower: 5 },
-                { type: 3, num: '5', name: '♣5', cardPower: 4 },
-                { type: 0, num: '3', name: '♥3', cardPower: 2 },
-                { type: 2, num: '2', name: '♦2', cardPower: 1 },
-                { type: 1, num: '2', name: '♠2', cardPower: 1 }
-            ],
-            playerCards: [
-                { type: 3, num: '5', name: '♣5', cardPower: 4 },
-                { type: 0, num: '3', name: '♥3', cardPower: 2 },
-            ]
-        },
-        highCard: { // 1高牌:5张单牌
-            cards: [
-                { type: 0, num: 'A', name: '♥A', cardPower: 13 },
-                { type: 1, num: 'Q', name: '♠Q', cardPower: 11 },
-                { type: 2, num: 'J', name: '♦J', cardPower: 10 },
-                { type: 3, num: '8', name: '♣8', cardPower: 7 },
-                { type: 0, num: '5', name: '♥5', cardPower: 4 },
-                { type: 2, num: '4', name: '♦4', cardPower: 3 },
-                { type: 1, num: '2', name: '♠2', cardPower: 1 }
-            ],
-            playerCards: [
-                { type: 2, num: 'J', name: '♦J', cardPower: 10 },
-                { type: 3, num: '8', name: '♣8', cardPower: 7 },
-            ]
-        },
-        Test(grandName) {
-        }
-    }
+    
+    // // 测试 牌组
+    // static TestCards = {
+    //     royalFlush: { // 10皇家同花顺:由5张 花色相同A K Q J 10 组成
+    //         cards: [
+    //             { type: 0, num: 'A', name: '♥A', cardPower: 13 },
+    //             { type: 0, num: 'K', name: '♥K', cardPower: 12 },
+    //             { type: 0, num: 'Q', name: '♥Q', cardPower: 11 },
+    //             { type: 0, num: 'J', name: '♥J', cardPower: 10 },
+    //             { type: 0, num: '10', name: '♥10', cardPower: 9 },
+    //             { type: 1, num: '2', name: '♠2', cardPower: 1 },
+    //             { type: 3, num: '2', name: '♠2', cardPower: 1 }
+    //         ],
+    //         playerCards: [
+    //             { type: 0, num: 'Q', name: '♥Q', cardPower: 11 },
+    //             { type: 0, num: 'J', name: '♥J', cardPower: 10 }
+    //         ]
+    //     },
+    //     straightFlush: { // 9同花顺:由5张 连张同花色的牌组成
+    //         cards: [
+    //             { type: 2, num: '12', name: '♦K', cardPower: 12 },
+    //             { type: 0, num: '12', name: '♥K', cardPower: 12 },
+    //             { type: 0, num: '11', name: '♥Q', cardPower: 11 },
+    //             { type: 0, num: '10', name: '♥J', cardPower: 10 },
+    //             { type: 0, num: '9', name: '♥10', cardPower: 9 },
+    //             { type: 0, num: '8', name: '♥9', cardPower: 8 },
+    //             { type: 1, num: '1', name: '♠2', cardPower: 1 },
+    //         ],
+    //         playerCards: [
+    //             { type: 0, num: '10', name: '♥J', cardPower: 10 },
+    //             { type: 0, num: '9', name: '♥10', cardPower: 9 },
+    //         ]
+    //     },
+    //     straightFlush2: { // 9同花顺:由5张 连张同花色的牌组成
+    //         cards: [
+    //             { type: 0, num: '13', name: '♥A', cardPower: 13 },
+    //             { type: 1, num: '6', name: '♠6', cardPower: 5 },
+    //             { type: 0, num: '5', name: '♥5', cardPower: 4 },
+    //             { type: 0, num: '4', name: '♥4', cardPower: 3 },
+    //             { type: 0, num: '3', name: '♥3', cardPower: 2 },
+    //             { type: 0, num: '2', name: '♥2', cardPower: 1 },
+    //             { type: 1, num: '2', name: '♠2', cardPower: 1 },
+    //         ],
+    //         playerCards: [
+    //             { type: 0, num: '13', name: '♥A', cardPower: 13 },
+    //             { type: 0, num: '5', name: '♥5', cardPower: 4 },
+    //         ]
+    //     },
+    //     fourOfAKind: { // 8四条(4带1)
+    //         cards: [
+    //             { type: 0, num: 'A', name: '♥A', cardPower: 13 },
+    //             { type: 2, num: 'A', name: '♦A', cardPower: 13 },
+    //             { type: 1, num: 'A', name: '♠A', cardPower: 13 },
+    //             { type: 3, num: 'A', name: '♣A', cardPower: 13 },
+    //             { type: 3, num: 'K', name: '♣K', cardPower: 12 },
+    //             { type: 0, num: 'J', name: '♥J', cardPower: 10 },
+    //             { type: 1, num: '2', name: '♠2', cardPower: 1 }
+    //         ],
+    //         playerCards: [
+    //             { type: 3, num: 'A', name: '♣A', cardPower: 13 },
+    //             { type: 3, num: 'K', name: '♣K', cardPower: 12 },
+    //         ]
+    //     },
+    //     fourOfAKind2: { // 8四条(4带1)
+    //         cards: [
+    //             { type: 3, num: 'K', name: '♣K', cardPower: 12 },
+    //             { type: 0, num: 'J', name: '♥J', cardPower: 10 },
+    //             { type: 1, num: '5', name: '♠5', cardPower: 4 },
+    //             { type: 0, num: '2', name: '♥2', cardPower: 1 },
+    //             { type: 2, num: '2', name: '♦2', cardPower: 1 },
+    //             { type: 1, num: '2', name: '♠2', cardPower: 1 },
+    //             { type: 3, num: '2', name: '♣2', cardPower: 1 }
+    //         ],
+    //         playerCards: [
+    //             { type: 1, num: '5', name: '♠5', cardPower: 4 },
+    //             { type: 0, num: '2', name: '♥2', cardPower: 1 },
+    //         ]
+    //     },
+    //     fullHouse: { // 7葫芦(3带2)
+    //         cards: [
+    //             { type: 0, num: 'A', name: '♥A', cardPower: 13 },
+    //             { type: 1, num: 'J', name: '♠J', cardPower: 10 },
+    //             { type: 2, num: 'J', name: '♦J', cardPower: 10 },
+    //             { type: 3, num: 'J', name: '♣J', cardPower: 10 },
+    //             { type: 0, num: '8', name: '♥8', cardPower: 7 },
+    //             { type: 2, num: '8', name: '♦8', cardPower: 7 },
+    //             { type: 1, num: '2', name: '♠2', cardPower: 1 }
+    //         ],
+    //         playerCards: [
+    //             { type: 3, num: 'J', name: '♣J', cardPower: 10 },
+    //             { type: 0, num: '8', name: '♥8', cardPower: 7 },
+    //         ]
+    //     },
+    //     fullHouse1: { // 7葫芦(3带2)
+    //         cards: [
+    //             { type: 0, num: 'A', name: '♥A', cardPower: 13 },
+    //             { type: 1, num: 'A', name: '♠A', cardPower: 13 },
+    //             { type: 2, num: 'A', name: '♦A', cardPower: 13 },
+    //             { type: 3, num: 'K', name: '♣K', cardPower: 12 },
+    //             { type: 0, num: 'K', name: '♥K', cardPower: 12 },
+    //             { type: 2, num: '8', name: '♦8', cardPower: 7 },
+    //             { type: 1, num: '2', name: '♠2', cardPower: 1 }
+    //         ],
+    //         playerCards: [
+    //             { type: 0, num: 'K', name: '♥K', cardPower: 12 },
+    //             { type: 2, num: '8', name: '♦8', cardPower: 7 },
+    //         ]
+    //     },
+    //     fullHouse2: { // 7葫芦(3带2)
+    //         cards: [
+    //             { type: 2, num: '8', name: '♦8', cardPower: 7 },
+    //             { type: 1, num: '5', name: '♠5', cardPower: 4 },
+    //             { type: 3, num: 'K', name: '♣3', cardPower: 2 },
+    //             { type: 0, num: 'K', name: '♥3', cardPower: 2 },
+    //             { type: 0, num: '2', name: '♥2', cardPower: 1 },
+    //             { type: 1, num: '2', name: '♠2', cardPower: 1 },
+    //             { type: 2, num: '2', name: '♦2', cardPower: 1 }
+    //         ],
+    //         playerCards: [
+    //             { type: 3, num: 'K', name: '♣3', cardPower: 2 },
+    //             { type: 2, num: '8', name: '♦8', cardPower: 7 },
+    //         ]
+    //     },
+    //     flush: { // 6同花: 5张牌花色相同，但不构成顺子
+    //         cards: [
+    //             { type: 2, num: '10', name: '♦10', cardPower: 9 },
+    //             { type: 0, num: '10', name: '♥10', cardPower: 9 },
+    //             { type: 0, num: '6', name: '♥6', cardPower: 5 },
+    //             { type: 0, num: '5', name: '♥5', cardPower: 4 },
+    //             { type: 0, num: '4', name: '♥4', cardPower: 3 },
+    //             { type: 0, num: '3', name: '♥3', cardPower: 2 },
+    //             { type: 1, num: '2', name: '♠2', cardPower: 1 }
+    //         ],
+    //         playerCards: [
+    //             { type: 0, num: '4', name: '♥4', cardPower: 3 },
+    //             { type: 1, num: '2', name: '♠2', cardPower: 1 }
+    //         ]
+    //     },
+    //     flush1: { // 6同花 最大: 5张牌花色相同，但不构成顺子
+    //         cards: [
+    //             { type: 0, num: 'A', name: '♥A', cardPower: 13 },
+    //             { type: 0, num: 'K', name: '♥K', cardPower: 12 },
+    //             { type: 0, num: 'Q', name: '♥Q', cardPower: 11 },
+    //             { type: 0, num: 'J', name: '♥J', cardPower: 10 },
+    //             { type: 0, num: '9', name: '♥9', cardPower: 8 },
+    //             { type: 1, num: '2', name: '♠2', cardPower: 1 },
+    //             { type: 3, num: '2', name: '♠2', cardPower: 1 }
+    //         ],
+    //         playerCards: [
+    //             { type: 0, num: 'J', name: '♥J', cardPower: 10 },
+    //             { type: 0, num: '9', name: '♥9', cardPower: 8 },
+    //         ]
+    //     },
+    //     flush2: { // 6同花 最小: 5张牌花色相同，但不构成顺子
+    //         cards: [
+    //             { type: 0, num: '7', name: '♥7', cardPower: 6 },
+    //             { type: 0, num: '6', name: '♥6', cardPower: 5 },
+    //             { type: 0, num: '5', name: '♥5', cardPower: 4 },
+    //             { type: 1, num: '5', name: '♠5', cardPower: 4 },
+    //             { type: 0, num: '4', name: '♥4', cardPower: 3 },
+    //             { type: 0, num: '2', name: '♥2', cardPower: 1 },
+    //             { type: 1, num: '2', name: '♠2', cardPower: 1 }
+    //         ],
+    //         playerCards: [
+    //             { type: 0, num: '4', name: '♥4', cardPower: 3 },
+    //             { type: 0, num: '2', name: '♥2', cardPower: 1 },
+    //         ]
+    //     },
+    //     straight: {// 5顺子: 5张牌连张，至少1张花色不同
+    //         cards: [
+    //             { type: 2, num: '10', name: '♦10', cardPower: 9 },
+    //             { type: 2, num: '7', name: '♦7', cardPower: 6 },
+    //             { type: 0, num: '6', name: '♥6', cardPower: 5 },
+    //             { type: 1, num: '5', name: '♠5', cardPower: 4 },
+    //             { type: 3, num: '4', name: '♣4', cardPower: 3 },
+    //             { type: 0, num: '3', name: '♥3', cardPower: 2 },
+    //             { type: 1, num: '3', name: '♠3', cardPower: 2 },
+    //         ],
+    //         playerCards: [
+    //             { type: 2, num: '10', name: '♦10', cardPower: 9 },
+    //             { type: 3, num: '4', name: '♣4', cardPower: 3 },
+    //         ]
+    //     },
+    //     straight1: {// 5顺子 最大：5张牌连张，至少1张花色不同
+    //         cards: [
+    //             { type: 1, num: 'A', name: '♠A', cardPower: 13 },
+    //             { type: 0, num: 'K', name: '♥K', cardPower: 12 },
+    //             { type: 0, num: 'Q', name: '♥Q', cardPower: 11 },
+    //             { type: 0, num: 'J', name: '♥J', cardPower: 10 },
+    //             { type: 0, num: '10', name: '♥10', cardPower: 9 },
+    //             { type: 1, num: '2', name: '♠2', cardPower: 1 },
+    //             { type: 1, num: '2', name: '♠2', cardPower: 1 }
+    //         ],
+    //         playerCards: [
+    //             { type: 0, num: 'J', name: '♥J', cardPower: 10 },
+    //             { type: 0, num: '10', name: '♥10', cardPower: 9 },
+    //         ]
+    //     },
+    //     straight2: {// 5顺子 测试乱牌
+    //         cards: [
+    //             { type: 0, num: '13', name: '♥A', cardPower: 13 },
+    //             { type: 1, num: '7', name: '♠7', cardPower: 6 },
+    //             { type: 0, num: '5', name: '♥5', cardPower: 4 },
+    //             { type: 2, num: '4', name: '♦4', cardPower: 3 },
+    //             { type: 3, num: '3', name: '♣3', cardPower: 2 },
+    //             { type: 0, num: '2', name: '♥2', cardPower: 1 },
+    //             { type: 1, num: '2', name: '♠2', cardPower: 1 },
+    //         ],
+    //         playerCards: [
+    //             { type: 2, num: '4', name: '♦4', cardPower: 3 },
+    //             { type: 3, num: '3', name: '♣3', cardPower: 2 },
+    //         ]
+    //     },
+    //     straight3: {// 5顺子: 5张牌连张，至少1张花色不同
+    //         cards: [
+    //             { type: 2, num: 'Q', name: '♦Q', cardPower: 11 },
+    //             { type: 2, num: 'J', name: '♦J', cardPower: 10 },
+    //             { type: 0, num: '10', name: '♥10', cardPower: 9 },
+    //             { type: 1, num: '9', name: '♠9', cardPower: 8 },
+    //             { type: 3, num: '8', name: '♣8', cardPower: 7 },
+    //             { type: 0, num: '3', name: '♥3', cardPower: 2 },
+    //             { type: 1, num: '2', name: '♠2', cardPower: 1 },
+    //         ],
+    //         playerCards: [
+    //             { type: 1, num: '9', name: '♠9', cardPower: 8 },
+    //             { type: 3, num: '8', name: '♣8', cardPower: 7 },
+    //         ]
+    //     },
+    //     straight4: {// 5顺子: 5张牌连张，至少1张花色不同
+    //         cards: [
+    //             { type: 2, num: 'K', name: '♦K', cardPower: 12 },
+    //             { type: 2, num: 'Q', name: '♦Q', cardPower: 11 },
+    //             { type: 0, num: 'J', name: '♥J', cardPower: 10 },
+    //             { type: 1, num: '3', name: '♠3', cardPower: 2 },
+    //             { type: 0, num: '3', name: '♥3', cardPower: 2 },
+    //             { type: 3, num: '2', name: '♣2', cardPower: 1 },
+    //             { type: 1, num: '2', name: '♠2', cardPower: 1 },
+    //         ],
+    //         playerCards: [
+    //             { type: 0, num: 'J', name: '♥J', cardPower: 10 },
+    //             { type: 1, num: '3', name: '♠3', cardPower: 2 },
+    //         ]
+    //     },
+    //     threeOfAKind: { //4三条: 3张牌点值相同，其他2张各异
+    //         cards: [
+    //             { type: 0, num: 'J', name: '♥J', cardPower: 10 },
+    //             { type: 1, num: 'J', name: '♠J', cardPower: 10 },
+    //             { type: 2, num: 'J', name: '♦J', cardPower: 10 },
+    //             { type: 3, num: '10', name: '♣10', cardPower: 9 },
+    //             { type: 0, num: '5', name: '♥5', cardPower: 4 },
+    //             { type: 2, num: '8', name: '♦8', cardPower: 7 },
+    //             { type: 1, num: '2', name: '♠2', cardPower: 1 }
+    //         ],
+    //         playerCards: [
+    //             { type: 2, num: 'J', name: '♦J', cardPower: 10 },
+    //             { type: 3, num: '10', name: '♣10', cardPower: 9 },
+    //         ]
+    //     },
+    //     threeOfAKind1: { //4三条 最大: 3张牌点值相同，其他2张各异
+    //         cards: [
+    //             { type: 0, num: 'J', name: '♥A', cardPower: 13 },
+    //             { type: 1, num: 'J', name: '♠A', cardPower: 13 },
+    //             { type: 2, num: 'J', name: '♦A', cardPower: 13 },
+    //             { type: 3, num: 'K', name: '♣K', cardPower: 12 },
+    //             { type: 0, num: 'Q', name: '♥Q', cardPower: 11 },
+    //             { type: 2, num: '8', name: '♦8', cardPower: 7 },
+    //             { type: 1, num: '2', name: '♠2', cardPower: 1 }
+    //         ],
+    //         playerCards: [
+    //             { type: 2, num: 'J', name: '♦A', cardPower: 13 },
+    //             { type: 3, num: 'K', name: '♣K', cardPower: 12 },
+    //         ]
+    //     },
+    //     threeOfAKind2: { //4三条 最小: 3张牌点值相同，其他2张各异
+    //         cards: [
+    //             { type: 2, num: '7', name: '♦7', cardPower: 6 },
+    //             { type: 0, num: '6', name: '♥6', cardPower: 5 },
+    //             { type: 1, num: '5', name: '♠5', cardPower: 4 },
+    //             { type: 3, num: '4', name: '♣4', cardPower: 3 },
+    //             { type: 0, num: '2', name: '♥2', cardPower: 1 },
+    //             { type: 1, num: '2', name: '♠2', cardPower: 1 },
+    //             { type: 2, num: '2', name: '♦2', cardPower: 1 }
+    //         ],
+    //         playerCards: [
+    //             { type: 2, num: '2', name: '♦2', cardPower: 1 },
+    //             { type: 3, num: '3', name: '♣3', cardPower: 2 },
+    //         ]
+    //     },
+    //     twoPair: { // 3两对: 2对加上一个杂牌
+    //         cards: [
+    //             { type: 0, num: 'A', name: '♥A', cardPower: 13 },
+    //             { type: 1, num: 'J', name: '♠J', cardPower: 10 },
+    //             { type: 2, num: 'J', name: '♦J', cardPower: 10 },
+    //             { type: 3, num: '10', name: '♣10', cardPower: 9 },
+    //             { type: 0, num: '5', name: '♥5', cardPower: 4 },
+    //             { type: 2, num: '5', name: '♦5', cardPower: 4 },
+    //             { type: 1, num: '2', name: '♠2', cardPower: 1 }
+    //         ],
+    //         playerCards: [
+    //             { type: 0, num: 'A', name: '♥A', cardPower: 13 },
+    //             { type: 0, num: '5', name: '♥5', cardPower: 4 },
+    //         ]
+    //     },
+    //     twoPair1: { // 3两对 最大: 2对加上一个杂牌
+    //         cards: [
+    //             { type: 0, num: 'A', name: '♥A', cardPower: 13 },
+    //             { type: 1, num: 'A', name: '♠A', cardPower: 13 },
+    //             { type: 2, num: 'K', name: '♦K', cardPower: 12 },
+    //             { type: 3, num: 'K', name: '♣K', cardPower: 12 },
+    //             { type: 0, num: 'Q', name: '♥Q', cardPower: 11 },
+    //             { type: 2, num: '5', name: '♦5', cardPower: 4 },
+    //             { type: 1, num: '2', name: '♠2', cardPower: 1 }
+    //         ],
+    //         playerCards: [
+    //             { type: 3, num: 'K', name: '♣K', cardPower: 12 },
+    //             { type: 0, num: 'Q', name: '♥Q', cardPower: 11 },
+    //         ]
+    //     },
+    //     twoPair2: { // 3两对 最大: 2对加上一个杂牌
+    //         cards: [
+    //             { type: 2, num: '6', name: '♦6', cardPower: 5 },
+    //             { type: 1, num: '5', name: '♠5', cardPower: 4 },
+    //             { type: 0, num: '4', name: '♥4', cardPower: 3 },
+    //             { type: 2, num: '3', name: '♦3', cardPower: 12 },
+    //             { type: 3, num: '3', name: '♣3', cardPower: 12 },
+    //             { type: 0, num: '2', name: '♥2', cardPower: 13 },
+    //             { type: 1, num: '2', name: '♠2', cardPower: 13 },
+    //         ],
+    //         playerCards: [
+    //             { type: 3, num: '3', name: '♣3', cardPower: 12 },
+    //             { type: 0, num: '4', name: '♥4', cardPower: 11 },
+    //         ]
+    //     },
+    //     onePair: { // 2一对: 1对加上3张杂牌
+    //         cards: [
+    //             { type: 0, num: 'A', name: '♥A', cardPower: 13 },
+    //             { type: 1, num: 'J', name: '♠J', cardPower: 10 },
+    //             { type: 2, num: 'J', name: '♦J', cardPower: 10 },
+    //             { type: 3, num: '10', name: '♣10', cardPower: 9 },
+    //             { type: 0, num: '5', name: '♥5', cardPower: 4 },
+    //             { type: 2, num: '4', name: '♦4', cardPower: 3 },
+    //             { type: 1, num: '2', name: '♠2', cardPower: 1 }
+    //         ],
+    //         playerCards: [
+    //             { type: 2, num: 'J', name: '♦J', cardPower: 10 },
+    //             { type: 2, num: '4', name: '♦4', cardPower: 3 },
+    //         ]
+    //     },
+    //     onePair1: { // 2一对 最大: 1对加上3张杂牌
+    //         cards: [
+    //             { type: 0, num: 'A', name: '♥A', cardPower: 13 },
+    //             { type: 1, num: 'A', name: '♠A', cardPower: 13 },
+    //             { type: 2, num: 'K', name: '♦K', cardPower: 12 },
+    //             { type: 3, num: 'Q', name: '♣Q', cardPower: 11 },
+    //             { type: 0, num: 'J', name: '♥J', cardPower: 10 },
+    //             { type: 2, num: '4', name: '♦4', cardPower: 3 },
+    //             { type: 1, num: '2', name: '♠2', cardPower: 1 }
+    //         ],
+    //         playerCards: [
+    //             { type: 3, num: 'Q', name: '♣Q', cardPower: 11 },
+    //             { type: 0, num: 'J', name: '♥J', cardPower: 10 },
+    //         ]
+    //     },
+    //     onePair2: { // 2一对 最小: 1对加上3张杂牌
+    //         cards: [
+    //             { type: 0, num: '8', name: '♥8', cardPower: 7 },
+    //             { type: 1, num: '7', name: '♠7', cardPower: 6 },
+    //             { type: 2, num: '6', name: '♦6', cardPower: 5 },
+    //             { type: 3, num: '5', name: '♣5', cardPower: 4 },
+    //             { type: 0, num: '3', name: '♥3', cardPower: 2 },
+    //             { type: 2, num: '2', name: '♦2', cardPower: 1 },
+    //             { type: 1, num: '2', name: '♠2', cardPower: 1 }
+    //         ],
+    //         playerCards: [
+    //             { type: 3, num: '5', name: '♣5', cardPower: 4 },
+    //             { type: 0, num: '3', name: '♥3', cardPower: 2 },
+    //         ]
+    //     },
+    //     highCard: { // 1高牌:5张单牌
+    //         cards: [
+    //             { type: 0, num: 'A', name: '♥A', cardPower: 13 },
+    //             { type: 1, num: 'Q', name: '♠Q', cardPower: 11 },
+    //             { type: 2, num: 'J', name: '♦J', cardPower: 10 },
+    //             { type: 3, num: '8', name: '♣8', cardPower: 7 },
+    //             { type: 0, num: '5', name: '♥5', cardPower: 4 },
+    //             { type: 2, num: '4', name: '♦4', cardPower: 3 },
+    //             { type: 1, num: '2', name: '♠2', cardPower: 1 }
+    //         ],
+    //         playerCards: [
+    //             { type: 2, num: 'J', name: '♦J', cardPower: 10 },
+    //             { type: 3, num: '8', name: '♣8', cardPower: 7 },
+    //         ]
+    //     },
+    //     Test(grandName) {
+    //     }
+    // }
+
 }
 

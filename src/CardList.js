@@ -4,7 +4,6 @@ import Card from './Card.js';
 //  feat:继承 数组 所有 属性
 export default class CardList extends Array {
     // -------------一.工具函数-------------
-    // fix 放入 tool.js文件
     // 1.生成指定随机整数
     //  feat:lower：最小数 upper：最大数 forbidNum：禁止数
     randomInt(lower, upper, forbidNum = false) {
@@ -23,6 +22,7 @@ export default class CardList extends Array {
 
     // -------------二.业务函数-------------
     // 1.构造函数：初始化一副牌
+    // feat: withking 双王
     constructor(withKing = true) {
         // feat:ES6 要求，子类的构造函数必须执行一次super函数
         super()
@@ -33,6 +33,7 @@ export default class CardList extends Array {
         let card; // 临时变量：存 牌对象 new Card
         // 1.3 循环4次，相当于四个花色 (红桃，黑桃，方块，梅花)
         for (let typeEng in Card.Type) {
+            // feat：保存花色值，用来获取花色图表
             let typeIndex = Card.Type[typeEng]
             // 1.4 循环获取 数字牌名（1-A）
             for (let num in Card.NumPower) {
@@ -52,19 +53,25 @@ export default class CardList extends Array {
     }
 
     // 2.洗牌（排序洗牌太低效,这里使用取出随机位置2的牌插入到随机位置1）
+    // feat：times 每张牌 平均 洗到的 次数
     shuffle(times = 3) {
         // 2.1 准备2个随机位置
         let rNum1 = 0;
         let rNum2 = 0;
         let rCard2 = null; // 随机位置2对应的牌
+
         for (let i = 1; i <= this.length * times; i++) {
             // a.获取 随机牌 下标
             rNum1 = this.randomInt(0, this.length - 1)
             rNum2 = this.randomInt(0, this.length - 1, rNum1)
+            // feat:console.log("随机数1：",rNum1,"随机数2：",rNum2);
             // b.将 rNum2 下标的 牌 放到 rNum1下标牌 后面
             // ['a','b','c'].splice(2,1)
+            // feat:取出原数组下标为 rNum2 的一张牌 原数组长度 -1
             rCard2 = this.splice(rNum2, 1)
+            // feat:console.log(i,"随机位置2对应的牌:",rCard2);
             // ['a','b','c'].splice(2,0,'x')
+            // feat：将取出的牌 插入到下标为 rNum1 的位置 原数组长度 +1
             this.splice(rNum1, 0, ...rCard2)
         }
     }
@@ -76,4 +83,8 @@ export default class CardList extends Array {
     }
 }
 // feat:测试
-console.log(CardList.randomInt);
+// let b = new CardList()
+// b.shuffle()
+// console.log(b);
+// console.log(b.getACard());
+// console.log(CardList.randomInt);
